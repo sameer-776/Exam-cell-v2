@@ -1,0 +1,1044 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin Dashboard - Poornima University Exam Cell</title>
+  <link
+    rel="stylesheet"
+    href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css"
+  />
+  <link
+    rel="stylesheet"
+    href="{{ url_for('static', filename='css/admin_style.css') }}"
+  />
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <div>
+        <h1>Poornima University Exam Cell</h1>
+        <p style="color: var(--text-light); margin: 4px 0 0 0; font-size: 0.95rem;">
+          Administrative Control Dashboard
+        </p>
+      </div>
+      <div class="header-actions">
+        <button class="btn" id="openAddNotificationBtn" onclick="openAddModal()">
+          <i class="fas fa-plus"></i> Add Notification
+        </button>
+        <button class="btn btn-secondary" id="openAddCalendarBtn" onclick="openAddCalendarModal()">
+          <i class="fas fa-calendar-plus"></i> Add Exam Date
+        </button>
+        <button class="btn btn-secondary" id="openSecurityBtn" onclick="openSecurityModal()">
+          <i class="fas fa-shield-alt"></i> Security
+        </button>
+        <a href="{{ url_for('index') }}" class="btn btn-secondary" target="_blank" rel="noopener noreferrer">
+          <i class="fas fa-external-link-alt"></i> Portal
+        </a>
+        <a href="{{ url_for('admin_logout') }}" class="btn btn-danger">
+          <i class="fas fa-sign-out-alt"></i> Logout
+        </a>
+      </div>
+    </div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, message in messages %}
+          <div class="flash {{ category }}">{{ message }}</div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+
+    <!-- Admin Tabs -->
+    <div class="admin-tabs" role="tablist">
+      <button class="admin-tab active" onclick="switchTab('active', this)" role="tab">
+        <i class="fas fa-bell"></i> Active Notifications
+        <span class="tab-badge">{{ active_notifications|length }}</span>
+      </button>
+      <button class="admin-tab" onclick="switchTab('scheduled', this)" role="tab">
+        <i class="fas fa-clock"></i> Scheduled
+        <span class="tab-badge">{{ scheduled_notifications|length }}</span>
+      </button>
+      <button class="admin-tab" onclick="switchTab('drafts', this)" role="tab">
+        <i class="fas fa-pencil-ruler"></i> Drafts
+        <span class="tab-badge">{{ draft_notifications|length }}</span>
+      </button>
+      <button class="admin-tab" onclick="switchTab('archived', this)" role="tab">
+        <i class="fas fa-archive"></i> Archive
+        <span class="tab-badge">{{ archived_notifications|length }}</span>
+      </button>
+      <button class="admin-tab" onclick="switchTab('calendar', this)" role="tab">
+        <i class="fas fa-calendar-alt"></i> Exam Calendar
+        <span class="tab-badge">{{ calendar_events|length }}</span>
+      </button>
+      <button class="admin-tab" onclick="switchTab('links', this)" role="tab">
+        <i class="fas fa-link"></i> Quick Links
+      </button>
+    </div>
+
+    <!-- TAB 1: ACTIVE NOTIFICATIONS -->
+    <div id="tab-active" class="tab-content card">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+        <h2 style="margin: 0;"><i class="fas fa-check-circle" style="color: var(--success);"></i> Active & Published Notifications</h2>
+        <span style="color: var(--text-light); font-size: 0.9rem;">Visible to students</span>
+      </div>
+      <div class="notification-list">
+        {% for notif in active_notifications %}
+        <div class="notification-item">
+          <div class="notif-details">
+            <span class="badge {{ notif.type }}">{{ notif.type }}</span>
+            <span class="badge published">Published</span>
+            {% if notif.end_datetime %}
+              <span class="badge expiry">Expires: {{ notif.end_datetime.split('T')[0] }}</span>
+            {% endif %}
+            {% if notif.is_popup %}
+              <span class="badge urgent"><i class="fas fa-exclamation-triangle"></i> Urgent Popup</span>
+            {% endif %}
+            <h3>{{ notif.title }}</h3>
+            <p>{{ notif.body|truncate(150) }}</p>
+            <p class="notif-meta">
+              <strong>Depts:</strong>
+              {% if 'all' in notif.department or not notif.department %}All Departments{% else %}{{ notif.department|join(', ') }}{% endif %}
+              | <strong>Years:</strong>
+              {% if 'all' in notif.year or not notif.year %}All Years{% else %}{{ notif.year|join(', ') }}{% endif %}
+              | <strong>Posted:</strong> {{ notif.start_datetime.split('T')[0] if notif.start_datetime else 'N/A' }}
+              {% if notif.attachment_url %}
+                | <a href="{{ notif.attachment_url }}" target="_blank" rel="noopener noreferrer">Attachment</a>
+              {% endif %}
+            </p>
+          </div>
+          <div class="notif-actions">
+            <button class="btn btn-secondary" onclick="openPreviewModal({{ notif | tojson | safe }})">
+              <i class="fas fa-eye"></i> Preview
+            </button>
+            <button class="btn btn-secondary" onclick="openEditModal({{ notif | tojson | safe }})">
+              <i class="fas fa-edit"></i> Edit
+            </button>
+            <button type="button" class="btn btn-danger" onclick="confirmDeleteNotification('{{ notif.id }}', '{{ notif.title|escape }}', 'Active Notification')">
+              <i class="fas fa-trash"></i> Delete
+            </button>
+          </div>
+        </div>
+        {% else %}
+        <p style="color: var(--text-light); text-align: center; padding: 20px;">No active notifications published.</p>
+        {% endfor %}
+      </div>
+    </div>
+
+    <!-- TAB 2: SCHEDULED NOTIFICATIONS -->
+    <div id="tab-scheduled" class="tab-content card" style="display: none;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+        <h2 style="margin: 0;"><i class="fas fa-clock" style="color: var(--scheduled);"></i> Scheduled Notifications</h2>
+        <span style="color: var(--text-light); font-size: 0.9rem;">Auto-published on scheduled date & time</span>
+      </div>
+      <div class="notification-list">
+        {% for notif in scheduled_notifications %}
+        <div class="notification-item scheduled-item">
+          <div class="notif-details">
+            <span class="badge {{ notif.type }}">{{ notif.type }}</span>
+            <span class="badge scheduled"><i class="fas fa-hourglass-half"></i> Scheduled</span>
+            <span class="badge expiry">Publishes: {{ notif.start_datetime.replace('T', ' ') if notif.start_datetime else 'Unset' }} IST</span>
+            <h3>{{ notif.title }}</h3>
+            <p>{{ notif.body|truncate(150) }}</p>
+            <p class="notif-meta">
+              <strong>Depts:</strong>
+              {% if 'all' in notif.department or not notif.department %}All Departments{% else %}{{ notif.department|join(', ') }}{% endif %}
+              | <strong>Years:</strong>
+              {% if 'all' in notif.year or not notif.year %}All Years{% else %}{{ notif.year|join(', ') }}{% endif %}
+            </p>
+          </div>
+          <div class="notif-actions">
+            <button class="btn btn-success" onclick="confirmImmediatePublish('{{ notif.id }}', '{{ notif.title|escape }}')">
+              <i class="fas fa-upload"></i> Publish Now
+            </button>
+            <button class="btn btn-secondary" onclick="openEditModal({{ notif | tojson | safe }})">
+              <i class="fas fa-edit"></i> Edit / Reschedule
+            </button>
+            <button type="button" class="btn btn-danger" onclick="confirmDeleteNotification('{{ notif.id }}', '{{ notif.title|escape }}', 'Scheduled Notification')">
+              <i class="fas fa-trash"></i> Cancel & Delete
+            </button>
+          </div>
+        </div>
+        {% else %}
+        <p style="color: var(--text-light); text-align: center; padding: 20px;">No scheduled notifications queued.</p>
+        {% endfor %}
+      </div>
+    </div>
+
+    <!-- TAB 3: DRAFT NOTIFICATIONS -->
+    <div id="tab-drafts" class="tab-content card" style="display: none;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+        <h2 style="margin: 0;"><i class="fas fa-pencil-ruler" style="color: var(--draft);"></i> Draft Notifications</h2>
+        <span style="color: var(--text-light); font-size: 0.9rem;">Never visible to students until published</span>
+      </div>
+      <div class="notification-list">
+        {% for notif in draft_notifications %}
+        <div class="notification-item draft-item">
+          <div class="notif-details">
+            <span class="badge {{ notif.type }}">{{ notif.type }}</span>
+            <span class="badge draft"><i class="fas fa-file-alt"></i> Draft</span>
+            <h3>{{ notif.title }}</h3>
+            <p>{{ notif.body|truncate(150) }}</p>
+            <p class="notif-meta">
+              <strong>Depts:</strong>
+              {% if 'all' in notif.department or not notif.department %}All Departments{% else %}{{ notif.department|join(', ') }}{% endif %}
+              | <strong>Years:</strong>
+              {% if 'all' in notif.year or not notif.year %}All Years{% else %}{{ notif.year|join(', ') }}{% endif %}
+            </p>
+          </div>
+          <div class="notif-actions">
+            <button class="btn btn-secondary" onclick="openPreviewModal({{ notif | tojson | safe }})">
+              <i class="fas fa-eye"></i> Preview
+            </button>
+            <button class="btn btn-success" onclick="openPublishConfirmationForDraft({{ notif | tojson | safe }})">
+              <i class="fas fa-upload"></i> Publish
+            </button>
+            <button class="btn btn-secondary" onclick="openEditModal({{ notif | tojson | safe }})">
+              <i class="fas fa-edit"></i> Edit
+            </button>
+            <button type="button" class="btn btn-danger" onclick="confirmDeleteNotification('{{ notif.id }}', '{{ notif.title|escape }}', 'Draft Notification')">
+              <i class="fas fa-trash"></i> Delete
+            </button>
+          </div>
+        </div>
+        {% else %}
+        <p style="color: var(--text-light); text-align: center; padding: 20px;">No drafts saved. Use "Save as Draft" when adding notices.</p>
+        {% endfor %}
+      </div>
+    </div>
+
+    <!-- TAB 4: ARCHIVED NOTIFICATIONS -->
+    <div id="tab-archived" class="tab-content card" style="display: none;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+        <h2 style="margin: 0;"><i class="fas fa-archive"></i> Archived Notifications</h2>
+        <span style="color: var(--text-light); font-size: 0.9rem;">Expired or manually archived</span>
+      </div>
+      <div class="notification-list">
+        {% for notif in archived_notifications %}
+        <div class="notification-item archived-item">
+          <div class="notif-details">
+            <span class="badge {{ notif.type }}">{{ notif.type }}</span>
+            <span class="badge archive">Archived</span>
+            <h3>{{ notif.title }}</h3>
+            <p>{{ notif.body|truncate(150) }}</p>
+          </div>
+          <div class="notif-actions">
+            <button class="btn btn-secondary" onclick="openEditModal({{ notif | tojson | safe }})">
+              <i class="fas fa-undo"></i> Edit / Restore
+            </button>
+            <button type="button" class="btn btn-danger" onclick="confirmDeleteNotification('{{ notif.id }}', '{{ notif.title|escape }}', 'Archived Notification')">
+              <i class="fas fa-trash"></i> Delete Permanently
+            </button>
+          </div>
+        </div>
+        {% else %}
+        <p style="color: var(--text-light); text-align: center; padding: 20px;">No notifications in the archive.</p>
+        {% endfor %}
+      </div>
+    </div>
+
+    <!-- TAB 5: EXAMINATION CALENDAR -->
+    <div id="tab-calendar" class="tab-content card" style="display: none;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 10px;">
+        <div>
+          <h2 style="margin: 0;"><i class="fas fa-calendar-alt" style="color: var(--primary-mid);"></i> Examination Calendar Entries</h2>
+          <span style="color: var(--text-light); font-size: 0.9rem;">Manage CIE, MSE, ESE, practicals, and deadlines</span>
+        </div>
+        <button class="btn" onclick="openAddCalendarModal()">
+          <i class="fas fa-plus"></i> Add New Exam Date
+        </button>
+      </div>
+      <div class="notification-list">
+        {% for ev in calendar_events %}
+        <div class="notification-item calendar-item">
+          <div class="notif-details">
+            <span class="badge {{ ev.exam_type }}">{{ ev.exam_type|upper }}</span>
+            <span class="badge expiry"><i class="fas fa-calendar-day"></i> {{ ev.date }}</span>
+            {% if ev.time_session %}
+              <span class="badge common"><i class="fas fa-clock"></i> {{ ev.time_session }}</span>
+            {% endif %}
+            <h3>{{ ev.title }}</h3>
+            <p>{{ ev.description }}</p>
+            <p class="notif-meta">
+              <strong>Depts:</strong>
+              {% if 'all' in ev.departments or not ev.departments %}All Departments{% else %}{{ ev.departments|join(', ') }}{% endif %}
+              | <strong>Years:</strong>
+              {% if 'all' in ev.years or not ev.years %}All Years{% else %}{{ ev.years|join(', ') }}{% endif %}
+              {% if ev.venue %} | <strong>Venue:</strong> {{ ev.venue }}{% endif %}
+            </p>
+          </div>
+          <div class="notif-actions">
+            <button class="btn btn-secondary" onclick="openEditCalendarModal({{ ev | tojson | safe }})">
+              <i class="fas fa-edit"></i> Edit
+            </button>
+            <button type="button" class="btn btn-danger" onclick="confirmDeleteCalendar('{{ ev.id }}', '{{ ev.title|escape }}')">
+              <i class="fas fa-trash"></i> Delete
+            </button>
+          </div>
+        </div>
+        {% else %}
+        <p style="color: var(--text-light); text-align: center; padding: 20px;">No examination calendar entries found.</p>
+        {% endfor %}
+      </div>
+    </div>
+
+    <!-- TAB 6: QUICK ACCESS LINKS -->
+    <div id="tab-links" class="tab-content card" style="display: none;">
+      <h2><i class="fas fa-link"></i> Edit Quick Access Links</h2>
+      <p style="color: var(--text-light); margin-bottom: 20px;">Update cards shown on the homepage.</p>
+      <form action="{{ url_for('update_config_links') }}" method="POST" enctype="multipart/form-data">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+        <div class="link-editor-grid">
+          {% for link in quick_links %}
+          <div class="link-editor-item">
+            <div class="link-icon"><i class="{{ link.icon_class }}"></i></div>
+            <div class="form-group">
+              <label>Title</label>
+              <input type="text" name="title_{{ loop.index0 }}" value="{{ link.title }}" required />
+            </div>
+            <div class="form-group">
+              <label>Link Target</label>
+              <div class="radio-group">
+                <input
+                  type="radio"
+                  id="link_type_url_{{ loop.index0 }}"
+                  name="link_type_{{ loop.index0 }}"
+                  value="url"
+                  checked
+                  onchange="toggleLinkInput('{{ loop.index0 }}', this.value)"
+                />
+                <label for="link_type_url_{{ loop.index0 }}">URL / Anchor</label>
+                <input
+                  type="radio"
+                  id="link_type_file_{{ loop.index0 }}"
+                  name="link_type_{{ loop.index0 }}"
+                  value="file"
+                  onchange="toggleLinkInput('{{ loop.index0 }}', this.value)"
+                />
+                <label for="link_type_file_{{ loop.index0 }}">Upload File</label>
+              </div>
+              <input
+                type="text"
+                id="url_{{ loop.index0 }}"
+                name="url_{{ loop.index0 }}"
+                value="{{ link.url }}"
+                class="link-url-input"
+              />
+              <input
+                type="file"
+                id="file_{{ loop.index0 }}"
+                name="file_{{ loop.index0 }}"
+                class="link-file-input"
+                style="display: none"
+              />
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+        <button type="submit" class="btn" style="margin-top: 20px;"><i class="fas fa-save"></i> Save Quick Links</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- NOTIFICATION ADD/EDIT MODAL -->
+  <div id="notificationModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="notificationModalTitle">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 id="notificationModalTitle">Add New Notification</h2>
+        <button type="button" class="close-button" onclick="closeNotificationModal()" aria-label="Close dialog">&times;</button>
+      </div>
+      <form id="notificationForm" method="POST" enctype="multipart/form-data">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+        <input type="hidden" id="notif_publish_action" name="publish_action" value="publish">
+        <div class="form-grid-3">
+          <div class="form-group span-3">
+            <label for="notif_title">Notification Title *</label>
+            <input type="text" id="notif_title" name="title" required placeholder="e.g. End Semester Exam Schedule Autumn 2026">
+          </div>
+          <div class="form-group span-3">
+            <label for="notif_body">Notification Body / Details *</label>
+            <textarea id="notif_body" name="body" rows="4" required placeholder="Enter full details for students..."></textarea>
+          </div>
+          <div class="form-group span-3">
+            <label>Attachment (Optional)</label>
+            <div class="radio-group" style="margin-bottom: 8px;">
+              <input type="radio" id="attach_url_radio" name="attach_type" value="url" checked onchange="toggleAttachment(this.value)">
+              <label for="attach_url_radio">Web Link / URL</label>
+              <input type="radio" id="attach_file_radio" name="attach_type" value="file" onchange="toggleAttachment(this.value)">
+              <label for="attach_file_radio">Upload File (PDF, Image, Doc)</label>
+            </div>
+            <input type="text" id="notif_attachment_url" name="attachment_url" placeholder="https://example.com/document.pdf">
+            <input type="text" id="edit_attachment_url_display" readonly style="display: none;" title="Current saved URL/File Path">
+            <input type="file" id="notif_attachment_file" name="attachment_file" style="display: none;">
+          </div>
+          <div class="form-group">
+            <label for="notif_type">Notification Category *</label>
+            <select id="notif_type" name="type" required onchange="toggleDepartmentalFields(this.value)">
+              {% for t in notification_types %}
+                <option value="{{ t.code }}">{{ t.name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="form-group span-2">
+            <label>Urgent Alert</label>
+            <div class="checkbox-group" style="margin-top: 10px;">
+              <input type="checkbox" id="notif_is_popup" name="is_popup" value="true">
+              <label for="notif_is_popup">Show as Urgent Highlight / Popup for students?</label>
+            </div>
+          </div>
+          <div class="form-group span-3 departmental-fields" id="departmentFields">
+            <label>Applicable Departments (Select all that apply, or none for All)</label>
+            <div class="checkbox-grid">
+              {% for dept in departments %}
+              <div class="checkbox-group">
+                <input type="checkbox" name="department" id="dept_{{ dept.code }}" value="{{ dept.code }}">
+                <label for="dept_{{ dept.code }}">{{ dept.short }}</label>
+              </div>
+              {% endfor %}
+            </div>
+          </div>
+          <div class="form-group span-3 departmental-fields" id="yearFields">
+            <label>Applicable Academic Years</label>
+            <div class="checkbox-grid">
+              {% for yr in academic_years %}
+              <div class="checkbox-group">
+                <input type="checkbox" name="year" id="yr_{{ yr.code }}" value="{{ yr.code }}">
+                <label for="yr_{{ yr.code }}">{{ yr.name }}</label>
+              </div>
+              {% endfor %}
+            </div>
+          </div>
+          <div class="form-group span-3">
+            <label>Publication Timing & Expiry</label>
+            <div class="radio-group" style="margin-bottom: 8px;">
+              <input type="radio" id="expiry_permanent" name="expiry_type" value="permanent" checked onchange="toggleExpiry(this.value)">
+              <label for="expiry_permanent">Permanent Notice</label>
+              <input type="radio" id="expiry_timed" name="expiry_type" value="timed" onchange="toggleExpiry(this.value)">
+              <label for="expiry_timed">Timed Expiry (Auto-archive after end date)</label>
+            </div>
+            <div id="timedInputs" style="display: none; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 10px;">
+              <div>
+                <label for="notif_start_datetime" style="font-size: 0.85rem;">Effective / Publication Date & Time (IST)</label>
+                <input type="datetime-local" id="notif_start_datetime" name="start_datetime">
+              </div>
+              <div>
+                <label for="notif_end_datetime" style="font-size: 0.85rem;">Expiry Date & Time (IST)</label>
+                <input type="datetime-local" id="notif_end_datetime" name="end_datetime">
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-form-actions">
+          <button type="button" class="btn btn-secondary" onclick="closeNotificationModal()">Cancel</button>
+          <button type="button" class="btn btn-draft" id="saveDraftBtn" onclick="submitNotificationAs('draft')">
+            <i class="fas fa-pencil-ruler"></i> Save as Draft
+          </button>
+          <button type="button" class="btn btn-warning" id="scheduleBtn" onclick="openScheduleConfirmation()">
+            <i class="fas fa-clock"></i> Schedule Publication
+          </button>
+          <button type="button" class="btn" id="publishBtn" onclick="openImmediatePublishConfirmation()">
+            <i class="fas fa-check-circle"></i> Publish Notification
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- PUBLICATION CONFIRMATION MODAL -->
+  <div id="publishConfirmModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="pubConfirmTitle">
+    <div class="modal-content confirm-modal-content">
+      <div class="confirm-icon info"><i class="fas fa-bullhorn"></i></div>
+      <h2 id="pubConfirmTitle" class="confirm-title">Confirm Notification Publication</h2>
+      <p class="confirm-description" id="pubConfirmDesc">Please review the target audience and schedule before proceeding.</p>
+
+      <div class="confirm-details-box">
+        <div class="confirm-details-row"><strong>Title:</strong> <span id="pubConfirmTitleText">-</span></div>
+        <div class="confirm-details-row"><strong>Target Department(s):</strong> <span id="pubConfirmDepts">-</span></div>
+        <div class="confirm-details-row"><strong>Target Year(s):</strong> <span id="pubConfirmYears">-</span></div>
+        <div class="confirm-details-row"><strong>Mode:</strong> <span id="pubConfirmMode" class="badge published">Immediate</span></div>
+        <div class="confirm-details-row"><strong>Publication Time:</strong> <span id="pubConfirmTime">-</span></div>
+      </div>
+
+      <div class="confirm-actions">
+        <button type="button" class="btn btn-secondary" onclick="closePublishConfirmModal()">Cancel</button>
+        <button type="button" class="btn btn-success" id="executePublishBtn" onclick="executePublishSubmission()">
+          <i class="fas fa-check"></i> Confirm & Proceed
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- DESTRUCTIVE ACTION CONFIRMATION MODAL -->
+  <div id="deleteConfirmModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="delConfirmTitle">
+    <div class="modal-content confirm-modal-content">
+      <div class="confirm-icon warning"><i class="fas fa-exclamation-triangle"></i></div>
+      <h2 id="delConfirmTitle" class="confirm-title">Confirm Deletion</h2>
+      <p class="confirm-description">
+        Are you sure you want to delete <strong id="deleteItemTitle">-</strong>?
+        <br><span style="color: var(--danger); font-size: 0.9rem;">This action is permanent and cannot be undone.</span>
+      </p>
+
+      <form id="deleteForm" method="POST">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+        <div class="confirm-actions">
+          <button type="button" class="btn btn-secondary" onclick="closeDeleteConfirmModal()">Cancel</button>
+          <button type="submit" class="btn btn-danger" id="executeDeleteBtn">
+            <i class="fas fa-trash"></i> Yes, Permanently Delete
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- PREVIEW MODAL -->
+  <div id="previewModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="previewModalTitle">
+    <div class="modal-content preview-modal-content">
+      <div class="modal-header">
+        <h2 id="previewModalTitle"><i class="fas fa-eye"></i> Student View Preview</h2>
+        <button type="button" class="close-button" onclick="closePreviewModal()">&times;</button>
+      </div>
+      <p style="color: var(--text-light); font-size: 0.9rem; margin-bottom: 16px;">
+        Here is how this notification will appear to students on the portal:
+      </p>
+      <div class="preview-card" id="previewCardContent">
+        <!-- Rendered via JS -->
+      </div>
+      <div class="modal-form-actions">
+        <button type="button" class="btn btn-secondary" onclick="closePreviewModal()">Close Preview</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- CALENDAR ADD/EDIT MODAL -->
+  <div id="calendarModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="calendarModalTitle">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 id="calendarModalTitle">Add Examination Calendar Entry</h2>
+        <button type="button" class="close-button" onclick="closeCalendarModal()">&times;</button>
+      </div>
+      <form id="calendarForm" method="POST">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+        <div class="form-grid">
+          <div class="form-group span-2">
+            <label for="cal_title">Examination Title *</label>
+            <input type="text" id="cal_title" name="title" required placeholder="e.g. Mid Semester Examination (MSE)">
+          </div>
+          <div class="form-group">
+            <label for="cal_exam_type">Examination Type *</label>
+            <select id="cal_exam_type" name="exam_type" required>
+              {% for et in exam_types %}
+                <option value="{{ et.code }}">{{ et.name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="cal_date">Examination / Deadline Date *</label>
+            <input type="date" id="cal_date" name="date" required>
+          </div>
+          <div class="form-group">
+            <label for="cal_time">Time / Session</label>
+            <input type="text" id="cal_time" name="time_session" placeholder="e.g. 10:00 AM - 01:00 PM (Morning)">
+          </div>
+          <div class="form-group">
+            <label for="cal_venue">Venue / Room / Platform</label>
+            <input type="text" id="cal_venue" name="venue" placeholder="e.g. Block A Examination Hall">
+          </div>
+          <div class="form-group span-2">
+            <label>Applicable Departments (None selected = All)</label>
+            <div class="checkbox-grid">
+              {% for dept in departments %}
+              <div class="checkbox-group">
+                <input type="checkbox" name="departments" id="cal_dept_{{ dept.code }}" value="{{ dept.code }}">
+                <label for="cal_dept_{{ dept.code }}">{{ dept.short }}</label>
+              </div>
+              {% endfor %}
+            </div>
+          </div>
+          <div class="form-group span-2">
+            <label>Applicable Academic Years</label>
+            <div class="checkbox-grid">
+              {% for yr in academic_years %}
+              <div class="checkbox-group">
+                <input type="checkbox" name="years" id="cal_yr_{{ yr.code }}" value="{{ yr.code }}">
+                <label for="cal_yr_{{ yr.code }}">{{ yr.name }}</label>
+              </div>
+              {% endfor %}
+            </div>
+          </div>
+          <div class="form-group span-2">
+            <label for="cal_description">Details / Instructions</label>
+            <textarea id="cal_description" name="description" rows="3" placeholder="Additional details for students..."></textarea>
+          </div>
+        </div>
+        <div class="modal-form-actions">
+          <button type="button" class="btn btn-secondary" onclick="closeCalendarModal()">Cancel</button>
+          <button type="submit" class="btn"><i class="fas fa-save"></i> Save Calendar Entry</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ACCOUNT SECURITY / CHANGE PASSWORD MODAL -->
+  <div id="securityModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="securityModalTitle">
+    <div class="modal-content" style="max-width: 480px;">
+      <div class="modal-header">
+        <h2 id="securityModalTitle"><i class="fas fa-shield-alt"></i> Account Security</h2>
+        <button type="button" class="close-button" onclick="closeSecurityModal()">&times;</button>
+      </div>
+      <form action="{{ url_for('admin_change_password') }}" method="POST">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+        <div class="form-group">
+          <label for="current_password">Current Password *</label>
+          <input type="password" id="current_password" name="current_password" required autocomplete="current-password">
+        </div>
+        <div class="form-group">
+          <label for="new_password">New Password (min 6 characters) *</label>
+          <input type="password" id="new_password" name="new_password" required minlength="6" autocomplete="new-password">
+        </div>
+        <div class="form-group">
+          <label for="confirm_password">Confirm New Password *</label>
+          <input type="password" id="confirm_password" name="confirm_password" required minlength="6" autocomplete="new-password">
+        </div>
+        <div class="modal-form-actions">
+          <button type="button" class="btn btn-secondary" onclick="closeSecurityModal()">Cancel</button>
+          <button type="submit" class="btn"><i class="fas fa-key"></i> Update Password</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    // Configuration provided dynamically by server
+    const departmentOptions = {
+      {% for d in departments %}"{{ d.code }}": "{{ d.short }}",{% endfor %}
+      "all": "All Departments"
+    };
+    const yearOptions = {
+      {% for y in academic_years %}"{{ y.code }}": "{{ y.short }}",{% endfor %}
+      "all": "All Years"
+    };
+
+    // Track active trigger for focus restoration
+    let lastActiveElement = null;
+    let isNotifFormDirty = false;
+    let isCalFormDirty = false;
+
+    // Track dirty status
+    document.getElementById('notificationForm').addEventListener('input', () => { isNotifFormDirty = true; });
+    document.getElementById('calendarForm').addEventListener('input', () => { isCalFormDirty = true; });
+
+    // Tab switcher
+    function switchTab(tabId, tabButton) {
+      document.querySelectorAll('.tab-content').forEach(el => el.style.display = 'none');
+      document.querySelectorAll('.admin-tab').forEach(btn => btn.classList.remove('active'));
+      const target = document.getElementById(`tab-${tabId}`);
+      if (target) target.style.display = 'block';
+      if (tabButton) tabButton.classList.add('active');
+    }
+
+    // Modal Helpers with Accessibility
+    function showModal(modal, triggerEl) {
+      lastActiveElement = triggerEl || document.activeElement;
+      modal.classList.add('active');
+      modal.style.display = 'flex';
+      const firstInput = modal.querySelector('input:not([type=hidden]), textarea, select, button');
+      if (firstInput) firstInput.focus();
+    }
+
+    function hideModal(modal) {
+      modal.classList.remove('active');
+      modal.style.display = 'none';
+      if (lastActiveElement && typeof lastActiveElement.focus === 'function') {
+        lastActiveElement.focus();
+      }
+    }
+
+    // Notification Modal
+    const notifModal = document.getElementById('notificationModal');
+    const notifForm = document.getElementById('notificationForm');
+
+    function openAddModal() {
+      notifForm.reset();
+      notifForm.action = "{{ url_for('add_notification') }}";
+      document.getElementById('notificationModalTitle').textContent = "Add New Notification";
+      document.getElementById('edit_attachment_url_display').style.display = 'none';
+      document.getElementById('notif_publish_action').value = 'publish';
+      toggleAttachment('url');
+      toggleExpiry('permanent');
+      toggleDepartmentalFields('common');
+      isNotifFormDirty = false;
+      showModal(notifModal, document.getElementById('openAddNotificationBtn'));
+    }
+
+    function openEditModal(notif) {
+      notifForm.reset();
+      notifForm.action = "/admin/edit/" + notif.id;
+      document.getElementById('notificationModalTitle').textContent = "Edit Notification";
+      document.getElementById('notif_title').value = notif.title || '';
+      document.getElementById('notif_body').value = notif.body || '';
+      document.getElementById('notif_type').value = notif.type || 'common';
+      document.getElementById('notif_is_popup').checked = !!notif.is_popup;
+
+      // Checkboxes
+      const depts = Array.isArray(notif.department) ? notif.department : [notif.department];
+      depts.forEach(d => {
+        const el = document.getElementById(`dept_${d}`);
+        if (el) el.checked = true;
+      });
+
+      const years = Array.isArray(notif.year) ? notif.year : [notif.year];
+      years.forEach(y => {
+        const el = document.getElementById(`yr_${y}`);
+        if (el) el.checked = true;
+      });
+
+      // Attachment
+      if (notif.attachment_url) {
+        document.getElementById('notif_attachment_url').value = notif.attachment_url;
+        const displayEl = document.getElementById('edit_attachment_url_display');
+        displayEl.value = notif.attachment_url;
+        displayEl.style.display = 'block';
+      } else {
+        document.getElementById('edit_attachment_url_display').style.display = 'none';
+      }
+
+      // Timing
+      if (notif.end_datetime) {
+        document.getElementById('expiry_timed').checked = true;
+        toggleExpiry('timed');
+        if (notif.start_datetime) document.getElementById('notif_start_datetime').value = formatForDateTimeInput(notif.start_datetime);
+        document.getElementById('notif_end_datetime').value = formatForDateTimeInput(notif.end_datetime);
+      } else if (notif.start_datetime && notif.status === 'scheduled') {
+        document.getElementById('expiry_timed').checked = true;
+        toggleExpiry('timed');
+        document.getElementById('notif_start_datetime').value = formatForDateTimeInput(notif.start_datetime);
+      } else {
+        document.getElementById('expiry_permanent').checked = true;
+        toggleExpiry('permanent');
+      }
+
+      toggleDepartmentalFields(notif.type || 'common');
+      isNotifFormDirty = false;
+      showModal(notifModal);
+    }
+
+    function closeNotificationModal() {
+      if (isNotifFormDirty) {
+        if (!confirm('You have unsaved changes in this notification. Discard changes?')) {
+          return;
+        }
+      }
+      isNotifFormDirty = false;
+      hideModal(notifModal);
+    }
+
+    function formatForDateTimeInput(isoStr) {
+      if (!isoStr) return '';
+      return isoStr.slice(0, 16);
+    }
+
+    function toggleAttachment(type) {
+      document.getElementById('notif_attachment_url').style.display = (type === 'url') ? 'block' : 'none';
+      document.getElementById('notif_attachment_file').style.display = (type === 'file') ? 'block' : 'none';
+    }
+
+    function toggleExpiry(type) {
+      document.getElementById('timedInputs').style.display = (type === 'timed') ? 'grid' : 'none';
+    }
+
+    function toggleDepartmentalFields(typeVal) {
+      const isDept = (typeVal === 'departmental');
+      document.getElementById('departmentFields').style.display = isDept ? 'block' : 'none';
+      document.getElementById('yearFields').style.display = isDept ? 'block' : 'none';
+    }
+
+    function toggleLinkInput(index, type) {
+      document.getElementById(`url_${index}`).style.display = (type === 'url') ? 'block' : 'none';
+      document.getElementById(`file_${index}`).style.display = (type === 'file') ? 'block' : 'none';
+    }
+
+    // Submit actions
+    function submitNotificationAs(action) {
+      if (!notifForm.checkValidity()) {
+        notifForm.reportValidity();
+        return;
+      }
+      document.getElementById('notif_publish_action').value = action;
+      isNotifFormDirty = false;
+      notifForm.submit();
+    }
+
+    // Publication Confirmation Handling
+    const pubConfirmModal = document.getElementById('publishConfirmModal');
+    let pendingPublishSubmission = null;
+
+    function getSelectedCheckboxes(name) {
+      const checked = [];
+      document.querySelectorAll(`input[name="${name}"]:checked`).forEach(el => checked.push(el.value));
+      return checked.length > 0 ? checked : ['all'];
+    }
+
+    function openImmediatePublishConfirmation() {
+      if (!notifForm.checkValidity()) {
+        notifForm.reportValidity();
+        return;
+      }
+      const title = document.getElementById('notif_title').value;
+      const depts = getSelectedCheckboxes('department').map(d => departmentOptions[d] || d).join(', ');
+      const years = getSelectedCheckboxes('year').map(y => yearOptions[y] || y).join(', ');
+
+      document.getElementById('pubConfirmTitleText').textContent = title;
+      document.getElementById('pubConfirmDepts').textContent = depts;
+      document.getElementById('pubConfirmYears').textContent = years;
+      document.getElementById('pubConfirmMode').textContent = "Immediate Publication";
+      document.getElementById('pubConfirmMode').className = "badge published";
+      document.getElementById('pubConfirmTime').textContent = "Immediately upon confirmation (Visible to students)";
+
+      pendingPublishSubmission = () => submitNotificationAs('publish');
+      showModal(pubConfirmModal);
+    }
+
+    function openScheduleConfirmation() {
+      if (!notifForm.checkValidity()) {
+        notifForm.reportValidity();
+        return;
+      }
+      const startInput = document.getElementById('notif_start_datetime');
+      if (!startInput.value) {
+        document.getElementById('expiry_timed').checked = true;
+        toggleExpiry('timed');
+        startInput.focus();
+        alert('Please choose a scheduled publication date and time in the Visibility Period section.');
+        return;
+      }
+      const title = document.getElementById('notif_title').value;
+      const depts = getSelectedCheckboxes('department').map(d => departmentOptions[d] || d).join(', ');
+      const years = getSelectedCheckboxes('year').map(y => yearOptions[y] || y).join(', ');
+
+      document.getElementById('pubConfirmTitleText').textContent = title;
+      document.getElementById('pubConfirmDepts').textContent = depts;
+      document.getElementById('pubConfirmYears').textContent = years;
+      document.getElementById('pubConfirmMode').textContent = "Scheduled Publication";
+      document.getElementById('pubConfirmMode').className = "badge scheduled";
+      document.getElementById('pubConfirmTime').textContent = startInput.value.replace('T', ' ') + " IST";
+
+      pendingPublishSubmission = () => submitNotificationAs('schedule');
+      showModal(pubConfirmModal);
+    }
+
+    function openPublishConfirmationForDraft(notif) {
+      document.getElementById('pubConfirmTitleText').textContent = notif.title;
+      const depts = (notif.department && notif.department.length)
+        ? notif.department.map(d => departmentOptions[d] || d).join(', ')
+        : "All Departments";
+      const years = (notif.year && notif.year.length)
+        ? notif.year.map(y => yearOptions[y] || y).join(', ')
+        : "All Years";
+
+      document.getElementById('pubConfirmDepts').textContent = depts;
+      document.getElementById('pubConfirmYears').textContent = years;
+      document.getElementById('pubConfirmMode').textContent = "Publish Draft";
+      document.getElementById('pubConfirmMode').className = "badge published";
+      document.getElementById('pubConfirmTime').textContent = "Immediately upon confirmation";
+
+      pendingPublishSubmission = () => {
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = '/admin/publish/' + notif.id;
+        const csrf = document.createElement('input');
+        csrf.type = 'hidden';
+        csrf.name = 'csrf_token';
+        csrf.value = '{{ csrf_token }}';
+        form.appendChild(csrf);
+        document.body.appendChild(form);
+        form.submit();
+      };
+      showModal(pubConfirmModal);
+    }
+
+    function confirmImmediatePublish(notifId, title) {
+      document.getElementById('pubConfirmTitleText').textContent = title;
+      document.getElementById('pubConfirmDepts').textContent = "Existing Settings";
+      document.getElementById('pubConfirmYears').textContent = "Existing Settings";
+      document.getElementById('pubConfirmMode').textContent = "Publish Now";
+      document.getElementById('pubConfirmMode').className = "badge published";
+      document.getElementById('pubConfirmTime').textContent = "Immediately upon confirmation";
+
+      pendingPublishSubmission = () => {
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = '/admin/publish/' + notifId;
+        const csrf = document.createElement('input');
+        csrf.type = 'hidden';
+        csrf.name = 'csrf_token';
+        csrf.value = '{{ csrf_token }}';
+        form.appendChild(csrf);
+        document.body.appendChild(form);
+        form.submit();
+      };
+      showModal(pubConfirmModal);
+    }
+
+    function executePublishSubmission() {
+      const btn = document.getElementById('executePublishBtn');
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Publishing...';
+      if (pendingPublishSubmission) pendingPublishSubmission();
+    }
+
+    function closePublishConfirmModal() {
+      hideModal(pubConfirmModal);
+    }
+
+    // Destructive Action Confirmation Handling
+    const deleteModal = document.getElementById('deleteConfirmModal');
+    const deleteForm = document.getElementById('deleteForm');
+
+    function confirmDeleteNotification(id, title, itemTypeName) {
+      document.getElementById('delConfirmTitle').textContent = `Delete ${itemTypeName}`;
+      document.getElementById('deleteItemTitle').textContent = `"${title}"`;
+      deleteForm.action = `/admin/delete/${id}`;
+      showModal(deleteModal);
+    }
+
+    function confirmDeleteCalendar(id, title) {
+      document.getElementById('delConfirmTitle').textContent = "Delete Exam Calendar Entry";
+      document.getElementById('deleteItemTitle').textContent = `"${title}"`;
+      deleteForm.action = `/admin/calendar/delete/${id}`;
+      showModal(deleteModal);
+    }
+
+    deleteForm.addEventListener('submit', () => {
+      const btn = document.getElementById('executeDeleteBtn');
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Deleting...';
+    });
+
+    function closeDeleteConfirmModal() {
+      hideModal(deleteModal);
+    }
+
+    // Preview Modal Handling
+    const previewModal = document.getElementById('previewModal');
+    function openPreviewModal(notif) {
+      const container = document.getElementById('previewCardContent');
+      const posted = notif.start_datetime ? notif.start_datetime.split('T')[0] : 'Just now';
+      const depts = (notif.department && notif.department.length)
+        ? notif.department.map(d => departmentOptions[d] || d).join(', ')
+        : "All Departments";
+      const years = (notif.year && notif.year.length)
+        ? notif.year.map(y => yearOptions[y] || y).join(', ')
+        : "All Years";
+
+      let attachHtml = '';
+      if (notif.attachment_url) {
+        attachHtml = `<div style="margin-top: 14px;"><a href="${notif.attachment_url}" target="_blank" rel="noopener noreferrer" style="color: var(--primary-mid); font-weight: 600;">🔗 View Attachment</a></div>`;
+      }
+
+      container.innerHTML = `
+        <div style="margin-bottom: 8px;">
+          <span class="badge ${notif.type}">${notif.type}</span>
+          ${notif.is_popup ? '<span class="badge urgent">Urgent Alert</span>' : ''}
+          <span style="color: var(--text-light); font-size: 0.85rem; margin-left: 6px;">Posted: ${posted}</span>
+        </div>
+        <h3 style="margin-bottom: 8px; font-size: 1.25rem;">${notif.title}</h3>
+        <p style="color: var(--text-dark); line-height: 1.6; white-space: pre-line; margin-bottom: 12px;">${notif.body}</p>
+        <div style="font-size: 0.85rem; color: var(--text-light); border-top: 1px solid var(--border-color); padding-top: 10px;">
+          <strong>Target Departments:</strong> ${depts} | <strong>Target Years:</strong> ${years}
+        </div>
+        ${attachHtml}
+      `;
+      showModal(previewModal);
+    }
+
+    function closePreviewModal() {
+      hideModal(previewModal);
+    }
+
+    // Calendar Modal Handling
+    const calModal = document.getElementById('calendarModal');
+    const calForm = document.getElementById('calendarForm');
+
+    function openAddCalendarModal() {
+      calForm.reset();
+      calForm.action = "{{ url_for('add_calendar_event') }}";
+      document.getElementById('calendarModalTitle').textContent = "Add Examination Calendar Entry";
+      isCalFormDirty = false;
+      showModal(calModal, document.getElementById('openAddCalendarBtn'));
+    }
+
+    function openEditCalendarModal(ev) {
+      calForm.reset();
+      calForm.action = `/admin/calendar/edit/${ev.id}`;
+      document.getElementById('calendarModalTitle').textContent = "Edit Examination Calendar Entry";
+      document.getElementById('cal_title').value = ev.title || '';
+      document.getElementById('cal_exam_type').value = ev.exam_type || 'other';
+      document.getElementById('cal_date').value = ev.date || '';
+      document.getElementById('cal_time').value = ev.time_session || '';
+      document.getElementById('cal_venue').value = ev.venue || '';
+      document.getElementById('cal_description').value = ev.description || '';
+
+      const depts = Array.isArray(ev.departments) ? ev.departments : [ev.departments];
+      depts.forEach(d => {
+        const el = document.getElementById(`cal_dept_${d}`);
+        if (el) el.checked = true;
+      });
+
+      const years = Array.isArray(ev.years) ? ev.years : [ev.years];
+      years.forEach(y => {
+        const el = document.getElementById(`cal_yr_${y}`);
+        if (el) el.checked = true;
+      });
+
+      isCalFormDirty = false;
+      showModal(calModal);
+    }
+
+    function closeCalendarModal() {
+      if (isCalFormDirty) {
+        if (!confirm('You have unsaved changes in this calendar entry. Discard changes?')) {
+          return;
+        }
+      }
+      isCalFormDirty = false;
+      hideModal(calModal);
+    }
+
+    // Security Modal Handling
+    const secModal = document.getElementById('securityModal');
+    function openSecurityModal() {
+      showModal(secModal, document.getElementById('openSecurityBtn'));
+    }
+    function closeSecurityModal() {
+      hideModal(secModal);
+    }
+
+    // Global Keyboard & Backdrop Listeners
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        const openModals = document.querySelectorAll('.modal.active');
+        openModals.forEach(m => {
+          if (m === notifModal) closeNotificationModal();
+          else if (m === calModal) closeCalendarModal();
+          else if (m === pubConfirmModal) closePublishConfirmModal();
+          else if (m === deleteModal) closeDeleteConfirmModal();
+          else if (m === previewModal) closePreviewModal();
+          else if (m === secModal) closeSecurityModal();
+        });
+      }
+    });
+
+    window.addEventListener('click', (e) => {
+      if (e.target.classList.contains('modal')) {
+        if (e.target === notifModal) closeNotificationModal();
+        else if (e.target === calModal) closeCalendarModal();
+        else if (e.target === pubConfirmModal) closePublishConfirmModal();
+        else if (e.target === deleteModal) closeDeleteConfirmModal();
+        else if (e.target === previewModal) closePreviewModal();
+        else if (e.target === secModal) closeSecurityModal();
+      }
+    });
+  </script>
+</body>
+</html>

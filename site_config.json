@@ -1,0 +1,71 @@
+{
+    "portal_settings": {
+        "university_name": "Poornima University",
+        "portal_title": "Poornima University Exam Cell",
+        "contact_email": "examcell@poornima.edu.in",
+        "hero_tagline": "The central hub for all official examination info at Poornima University.",
+        "notifications_per_page": 5
+    },
+    "departments": [
+        {"code": "cse", "name": "Faculty of Computer Science & Engineering", "short": "CS & Engineering"},
+        {"code": "eng", "name": "Faculty of Engineering & Technology", "short": "Engineering & Tech"},
+        {"code": "arch", "name": "Faculty of Planning & Architecture", "short": "Planning & Architecture"},
+        {"code": "design", "name": "Faculty of Design & Arts", "short": "Design & Arts"},
+        {"code": "mgmt", "name": "Faculty of Management & Commerce", "short": "Management & Commerce"},
+        {"code": "hm", "name": "Poornima Institute of Hotel Management", "short": "Hotel Management"},
+        {"code": "sci", "name": "Faculty of Science & Humanities", "short": "Science & Humanities"},
+        {"code": "health", "name": "Faculty of Public Health", "short": "Public Health"},
+        {"code": "ire", "name": "Faculty of Innovation, Research & Entrepreneurship", "short": "Innovation & Research"}
+    ],
+    "academic_years": [
+        {"code": "1", "name": "First Year", "short": "1st Year"},
+        {"code": "2", "name": "Second Year", "short": "2nd Year"},
+        {"code": "3", "name": "Third Year", "short": "3rd Year"},
+        {"code": "4", "name": "Fourth Year", "short": "4th Year"},
+        {"code": "5", "name": "Fifth Year", "short": "5th Year"}
+    ],
+    "notification_types": [
+        {"code": "common", "name": "General Announcement", "badge": "common"},
+        {"code": "departmental", "name": "Departmental Notice", "badge": "departmental"},
+        {"code": "guideline", "name": "University Guideline", "badge": "guideline"},
+        {"code": "info", "name": "General Information", "badge": "info"}
+    ],
+    "exam_types": [
+        {"code": "cie", "name": "Continuous Internal Evaluation (CIE)", "color": "#1e4a8f"},
+        {"code": "mse", "name": "Mid Semester Examination (MSE)", "color": "#7c5cff"},
+        {"code": "ese", "name": "End Semester Examination (ESE)", "color": "#e44b4b"},
+        {"code": "practical", "name": "Practical / Lab Examination", "color": "#2ecc71"},
+        {"code": "deadline", "name": "Registration / Fee Deadline", "color": "#fd7e14"},
+        {"code": "other", "name": "Other Academic Exam Date", "color": "#64748b"}
+    ],
+    "quick_links": [
+        {
+            "id": "link_1",
+            "title": "Academic Calendar",
+            "description": "View all key dates for the semester.",
+            "icon_class": "fas fa-calendar-alt",
+            "url": "#exam-calendar"
+        },
+        {
+            "id": "link_2",
+            "title": "View Results",
+            "description": "Access the official results portal.",
+            "icon_class": "fas fa-poll",
+            "url": "#"
+        },
+        {
+            "id": "link_3",
+            "title": "Syllabus & Scheme",
+            "description": "Find curriculum for all branches.",
+            "icon_class": "fas fa-book",
+            "url": "#"
+        },
+        {
+            "id": "link_4",
+            "title": "Contact Exam Cell",
+            "description": "Get in touch with the administration.",
+            "icon_class": "fas fa-envelope-open-text",
+            "url": "#"
+        }
+    ]
+}

@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Poornima University - Exam Cell Portal</title>
+    <meta name="description" content="Central examination portal for Poornima University. Access timetables, CIE, MSE, ESE examination schedules, and official notices.">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@700&family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <header>
+        <div class="container">
+            <div class="logo">
+                <img src="{{ url_for('static', filename='images/logo.png') }}" alt="Poornima University Logo">
+                <h1>Poornima University Exam Cell</h1>
+            </div>
+            <button class="mobile-nav-toggle" id="mobileNavToggle" aria-label="Toggle navigation menu">
+                <i class="fas fa-bars"></i>
+            </button>
+            <nav id="mainNav">
+                <a href="#home">Home</a>
+                <a href="#notifications">Notifications</a>
+                <a href="#exam-calendar">Exam Calendar</a>
+                <a href="#quick-access">Quick Links</a>
+                <a href="#team">About Us</a>
+                <a href="{{ url_for('admin_login') }}" style="color: var(--primary-mid);"><i class="fas fa-user-shield"></i> Admin</a>
+            </nav>
+        </div>
+    </header>
+
+    <main>
+        <!-- Hero Section -->
+        <section id="home" class="hero-section">
+            <div class="container">
+                <h2 id="hero-text">
+                    One site for all your
+                    <div class="word-wheel-wrapper">
+                        <div class="word-wheel"></div>
+                    </div>
+                </h2>
+                <p>The central hub for official examination schedules, CIE, MSE, ESE guidelines, and notices at Poornima University.</p>
+                <div class="hero-cta">
+                    <a href="#notifications" class="btn"><i class="fas fa-bell"></i> Find My Department's Updates</a>
+                    <a href="#exam-calendar" class="btn"><i class="fas fa-calendar-alt"></i> View Examination Calendar</a>
+                </div>
+            </div>
+        </section>
+
+        <!-- Quick Access Section -->
+        <section id="quick-access" class="quick-access-section">
+            <div class="container">
+                <div class="quick-access-grid">
+                    {% for link in quick_links %}
+                    <a href="{{ link.url }}" class="quick-access-card" {% if not link.url.startswith('#') %}target="_blank" rel="noopener noreferrer"{% endif %}>
+                        <i class="{{ link.icon_class }}"></i>
+                        <h4>{{ link.title }}</h4>
+                        <p>{{ link.description }}</p>
+                    </a>
+                    {% endfor %}
+                </div>
+            </div>
+        </section>
+        
+        <!-- Notifications & Search Section -->
+        <section id="notifications" class="notifications-section">
+            <div class="container">
+                <!-- Lightweight Student Preferences Bar -->
+                <div class="student-preferences-bar" id="studentPreferencesBar">
+                    <div class="prefs-status">
+                        <span style="font-weight: 600; color: var(--primary-dark);">
+                            <i class="fas fa-user-graduate"></i> Student View:
+                        </span>
+                        <span class="prefs-badge" id="activePrefsBadge">
+                            <i class="fas fa-globe"></i> All Departments & Years
+                        </span>
+                    </div>
+                    <div class="prefs-actions">
+                        <button type="button" class="btn-pref" id="btnOpenPrefsModal">
+                            <i class="fas fa-sliders-h"></i> Personalize Feed
+                        </button>
+                        <button type="button" class="btn-pref clear" id="btnClearPrefs" style="display: none;">
+                            <i class="fas fa-times"></i> Clear Preferences
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Search and Filters Section -->
+                <div class="search-filter-section">
+                    <div class="search-bar-row">
+                        <div class="search-input-wrapper">
+                            <i class="fas fa-search"></i>
+                            <input
+                                type="text"
+                                id="search-input"
+                                class="search-input"
+                                placeholder="Search notifications by title, subject, or keyword..."
+                                aria-label="Search notifications"
+                            >
+                        </div>
+                    </div>
+                    <div class="filter-dropdowns-row">
+                        <select id="department-select" class="filter-select" aria-label="Filter by department">
+                            <option value="">-- All Departments --</option>
+                            {% for dept in departments %}
+                            <option value="{{ dept.code }}">{{ dept.name }}</option>
+                            {% endfor %}
+                        </select>
+                        <select id="year-select" class="filter-select" aria-label="Filter by academic year">
+                            <option value="">-- All Academic Years --</option>
+                            {% for yr in academic_years %}
+                            <option value="{{ yr.code }}">{{ yr.name }}</option>
+                            {% endfor %}
+                        </select>
+                        <select id="category-select" class="filter-select" aria-label="Filter by category">
+                            <option value="all">-- All Categories --</option>
+                            {% for t in notification_types %}
+                            <option value="{{ t.code }}">{{ t.name }}</option>
+                            {% endfor %}
+                        </select>
+                        <select id="timeframe-select" class="filter-select" aria-label="Filter by timeframe">
+                            <option value="">-- Any Time --</option>
+                            <option value="7days">Past 7 Days</option>
+                            <option value="30days">Past 30 Days</option>
+                            <option value="semester">This Semester</option>
+                        </select>
+                        <button type="button" class="btn-reset-filters" id="btnResetFilters">
+                            <i class="fas fa-undo"></i> Reset Filters
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Notifications Main Grid -->
+                <div class="notifications-grid">
+                    <div class="grid-column-main">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <h3 style="margin: 0;"><i class="fas fa-list-alt"></i> Examination Notices</h3>
+                            <span id="resultsCountBadge" style="font-size: 0.85rem; color: var(--muted); font-weight: 600;"></span>
+                        </div>
+                        <div id="department-notifications-container" class="notification-list" aria-live="polite">
+                            <!-- Populated dynamically / with skeletons -->
+                        </div>
+                        <div id="pagination-container" class="pagination-wrapper" style="display: none;">
+                            <div class="pagination-info" id="paginationInfo">Showing 1-5 of 10</div>
+                            <div class="pagination-controls">
+                                <button type="button" class="pagination-btn" id="prevPageBtn" disabled>
+                                    <i class="fas fa-chevron-left"></i> Previous
+                                </button>
+                                <span id="pageIndicator" style="font-size: 0.9rem; font-weight: 600; padding: 0 8px;">1 / 1</span>
+                                <button type="button" class="pagination-btn" id="nextPageBtn" disabled>
+                                    Next <i class="fas fa-chevron-right"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="grid-column-side">
+                        <div class="side-section">
+                            <h3><i class="fas fa-bullhorn"></i> General Announcements</h3>
+                            <div id="common-notifications-container" class="notification-list-side" aria-live="polite"></div>
+                        </div>
+                        <div class="side-section">
+                            <h3><i class="fas fa-book-open"></i> University Guidelines</h3>
+                            <div id="common-guidelines-container" class="notification-list-side" aria-live="polite"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Dedicated Examination Calendar Section -->
+        <section id="exam-calendar" class="calendar-section">
+            <div class="container">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 12px;">
+                    <div>
+                        <h2 style="margin: 0;"><i class="fas fa-calendar-alt" style="color: var(--primary-mid);"></i> Official Examination Calendar</h2>
+                        <p style="color: var(--muted); margin: 4px 0 0 0; font-size: 0.95rem;">
+                            Key dates for CIE, MSE, ESE, practical examinations, and registration deadlines.
+                        </p>
+                    </div>
+                    <!-- Calendar Legend -->
+                    <div style="display: flex; gap: 8px; flex-wrap: wrap; font-size: 0.8rem; font-weight: 600;">
+                        <span style="display: inline-flex; align-items: center; gap: 4px;"><span class="exam-dot cie"></span> CIE</span>
+                        <span style="display: inline-flex; align-items: center; gap: 4px;"><span class="exam-dot mse"></span> MSE</span>
+                        <span style="display: inline-flex; align-items: center; gap: 4px;"><span class="exam-dot ese"></span> ESE</span>
+                        <span style="display: inline-flex; align-items: center; gap: 4px;"><span class="exam-dot practical"></span> Practical</span>
+                        <span style="display: inline-flex; align-items: center; gap: 4px;"><span class="exam-dot deadline"></span> Deadline</span>
+                    </div>
+                </div>
+
+                <div class="calendar-layout">
+                    <!-- Monthly Calendar View -->
+                    <div class="calendar-box">
+                        <div class="calendar-header">
+                            <h3 id="currentMonthYear">October 2026</h3>
+                            <div style="display: flex; gap: 6px;">
+                                <button type="button" class="calendar-nav-btn" id="prevMonthBtn" aria-label="Previous month">
+                                    <i class="fas fa-chevron-left"></i>
+                                </button>
+                                <button type="button" class="calendar-nav-btn" id="todayMonthBtn">Today</button>
+                                <button type="button" class="calendar-nav-btn" id="nextMonthBtn" aria-label="Next month">
+                                    <i class="fas fa-chevron-right"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="calendar-weekdays">
+                            <div>Sun</div><div>Mon</div><div>Tue</div><div>Wed</div><div>Thu</div><div>Fri</div><div>Sat</div>
+                        </div>
+                        <div class="calendar-days" id="calendarDaysGrid">
+                            <!-- Populated dynamically via script.js -->
+                        </div>
+                    </div>
+
+                    <!-- Upcoming Examinations List & Countdown -->
+                    <div>
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                            <h3 style="margin: 0;"><i class="fas fa-hourglass-half"></i> Upcoming Important Dates</h3>
+                            <span id="calendarFilteredStatus" style="font-size: 0.85rem; color: var(--muted);">Showing all</span>
+                        </div>
+                        <div id="upcomingExamsContainer" class="upcoming-exams-box" aria-live="polite">
+                            <!-- Populated dynamically via script.js -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Archived Notifications Section -->
+        <section class="notifications-section archive-section">
+            <div class="container">
+                 <h3><i class="fas fa-archive"></i> Previous Notifications (Archive)</h3>
+                 <p style="color: var(--muted); margin-bottom: 16px;">Historical examination announcements and completed schedules.</p>
+                 <div id="archive-notifications-container" class="notification-list" aria-live="polite"></div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Student Preference Modal -->
+    <div id="preferenceModal" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="prefModalTitle">
+        <div class="modal-content" style="max-width: 480px;">
+            <button class="close-button" id="closePrefModalBtn" aria-label="Close dialog">&times;</button>
+            <h3 id="prefModalTitle" style="color: var(--primary-dark);"><i class="fas fa-sliders-h"></i> Personalize Your Updates</h3>
+            <p style="color: var(--muted); font-size: 0.9rem;">
+                Select your department and year to see relevant examination updates first. Preferences are remembered on your device without requiring an account.
+            </p>
+            <div style="margin: 20px 0;">
+                <div class="form-group" style="margin-bottom: 16px;">
+                    <label for="prefDeptSelect" style="display: block; font-weight: 600; margin-bottom: 6px;">Your Department</label>
+                    <select id="prefDeptSelect" class="filter-select" style="width: 100%;">
+                        <option value="">-- Select Department --</option>
+                        {% for dept in departments %}
+                        <option value="{{ dept.code }}">{{ dept.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="prefYearSelect" style="display: block; font-weight: 600; margin-bottom: 6px;">Your Academic Year</label>
+                    <select id="prefYearSelect" class="filter-select" style="width: 100%;">
+                        <option value="">-- Select Year --</option>
+                        {% for yr in academic_years %}
+                        <option value="{{ yr.code }}">{{ yr.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+            <div style="display: flex; gap: 10px; justify-content: flex-end;">
+                <button type="button" class="btn-pref clear" id="btnCancelPrefsModal">Cancel</button>
+                <button type="button" class="btn" id="btnSavePreferences"><i class="fas fa-check"></i> Save Preferences</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notification Details Modal -->
+    <div id="detailModalOverlay" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+        <div class="modal-content">
+            <button class="close-button" id="closeDetailModalBtn" aria-label="Close dialog">&times;</button>
+            <div id="modal-badge-wrapper" style="margin-bottom: 8px;"></div>
+            <h3 id="modal-title" style="margin-top: 0; color: var(--primary-mid);">Notification Details</h3>
+            <div id="modal-meta" style="font-size: 0.85rem; color: var(--muted); margin-bottom: 14px;"></div>
+            <div id="modal-body" style="line-height: 1.6; color: #334155;"></div>
+            <div id="modal-attachment" style="margin-top: 18px;"></div>
+        </div>
+    </div>
+
+    <footer id="team" class="footer">
+        <div class="container">
+            <div class="footer-developer-section">
+                <h3 class="footer-section-title">Developed by</h3>
+                <div class="footer-developers-grid">
+                    <a href="https://www.linkedin.com/in/sameer-beniwal/" target="_blank" rel="noopener noreferrer" class="footer-developer-card"><i class="fas fa-user-circle"></i><div class="footer-dev-name">Sameer</div><div class="footer-dev-details">17768 - B.Tech AIML</div></a>
+                    <a href="http://www.linkedin.com/in/kshitijsoni07" target="_blank" rel="noopener noreferrer" class="footer-developer-card"><i class="fas fa-user-circle"></i><div class="footer-dev-name">Kshitij Soni</div><div class="footer-dev-details">18810 - BCA</div></a>
+                    <a href="https://www.linkedin.com/in/aryan-semunal-gaikwad/" target="_blank" rel="noopener noreferrer" class="footer-developer-card"><i class="fas fa-user-circle"></i><div class="footer-dev-name">Aryan Gaikwad</div><div class="footer-dev-details">18800 - B.Tech AIML</div></a>
+                    <a href="https://www.linkedin.com/in/mohit-kumar-00bb50202/" target="_blank" rel="noopener noreferrer" class="footer-developer-card"><i class="fas fa-user-circle"></i><div class="footer-dev-name">Mohit Kumar</div><div class="footer-dev-details">19405 - BCA</div></a>
+                </div>
+            </div>
+            <div class="footer-info-section">
+                <p>Under the supervision of <strong>Dr. Vipin Khattri</strong></p>
+                <p class="contact-info"><strong>Contact Exam Cell:</strong> <a href="mailto:{{ site_config.portal_settings.contact_email or 'examcell@poornima.edu.in' }}">{{ site_config.portal_settings.contact_email or 'examcell@poornima.edu.in' }}</a></p>
+                <p class="copyright">© <span id="year"></span> Poornima University. All Rights Reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+</body>
+</html>

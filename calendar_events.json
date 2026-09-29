@@ -1,0 +1,82 @@
+[
+    {
+        "id": "cal-001",
+        "title": "Semester Examination Fee & Registration Deadline",
+        "exam_type": "deadline",
+        "date": "2026-10-05",
+        "time_session": "11:59 PM IST",
+        "departments": [
+            "all"
+        ],
+        "years": [
+            "all"
+        ],
+        "venue": "Online Portal",
+        "description": "Last date to submit examination forms and fees without late fine."
+    },
+    {
+        "id": "cal-002",
+        "title": "Continuous Internal Evaluation - I (CIE-1)",
+        "exam_type": "cie",
+        "date": "2026-10-15",
+        "time_session": "10:00 AM - 12:00 PM (Morning)",
+        "departments": [
+            "cse",
+            "eng"
+        ],
+        "years": [
+            "2",
+            "3",
+            "4"
+        ],
+        "venue": "Academic Block A & B",
+        "description": "First internal assessment test for all B.Tech and Engineering courses."
+    },
+    {
+        "id": "cal-003",
+        "title": "Practical & Lab Mid-Term Assessments",
+        "exam_type": "practical",
+        "date": "2026-10-22",
+        "time_session": "09:30 AM - 04:30 PM",
+        "departments": [
+            "cse",
+            "design",
+            "sci"
+        ],
+        "years": [
+            "3"
+        ],
+        "venue": "Department Computer Labs & Studios",
+        "description": "Evaluation of lab notebooks, viva voce, and practical coding exercises."
+    },
+    {
+        "id": "cal-004",
+        "title": "Mid Semester Examination (MSE)",
+        "exam_type": "mse",
+        "date": "2026-11-04",
+        "time_session": "10:00 AM - 01:00 PM",
+        "departments": [
+            "all"
+        ],
+        "years": [
+            "all"
+        ],
+        "venue": "Central Examination Hall, Block C",
+        "description": "Mid-term university examinations across all faculties."
+    },
+    {
+        "id": "cal-005",
+        "title": "End Semester Examination (ESE) - Theory",
+        "exam_type": "ese",
+        "date": "2026-12-08",
+        "time_session": "10:00 AM - 01:00 PM (Shift 1) / 02:00 PM - 05:00 PM (Shift 2)",
+        "departments": [
+            "all"
+        ],
+        "years": [
+            "all"
+        ],
+        "venue": "All Examination Centers",
+        "description": "Final semester examinations for Autumn / Odd semester."
+    }
+]

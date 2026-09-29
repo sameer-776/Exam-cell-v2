@@ -1,0 +1,90 @@
+[
+    {
+        "id": "a1b2c3d4-e5f6-7890-1234-567890abcdef",
+        "title": "Semester Examination Schedule",
+        "body": "The schedule for the upcoming semester examinations has been released. Please check the attachment for detailed timings and dates.",
+        "type": "common",
+        "status": "published",
+        "department": [
+            "all"
+        ],
+        "year": [
+            "all"
+        ],
+        "attachment_url": "https://www.poornima.edu.in/schedules/exam-schedule.pdf",
+        "is_popup": true,
+        "start_datetime": "2026-09-15T10:00:00",
+        "end_datetime": null
+    },
+    {
+        "id": "b2c3d4e5-f6a7-8901-2345-67890abcdef1",
+        "title": "Lab Practical for 3rd Year CSE",
+        "body": "The practical examination for the Data Structures lab is scheduled for next week. Batches will be notified by the department.",
+        "type": "departmental",
+        "status": "published",
+        "department": [
+            "cse"
+        ],
+        "year": [
+            "3"
+        ],
+        "attachment_url": "",
+        "is_popup": false,
+        "start_datetime": "2026-09-20T12:30:00",
+        "end_datetime": null
+    },
+    {
+        "id": "c3d4e5f6-a7b8-9012-3456-7890abcdef12",
+        "title": "Guideline for Re-evaluation",
+        "body": "Students seeking re-evaluation of their answer sheets must apply through the university portal within 7 days of result declaration.",
+        "type": "guideline",
+        "status": "published",
+        "department": [
+            "all"
+        ],
+        "year": [
+            "all"
+        ],
+        "attachment_url": "",
+        "is_popup": false,
+        "start_datetime": "2026-09-10T09:00:00",
+        "end_datetime": null
+    },
+    {
+        "id": "d4e5f6a7-b8c9-0123-4567-890abcdef123",
+        "title": "Draft: Notice on Admit Card Distribution",
+        "body": "Admit cards for the End Semester Examinations will be distributed through respective department HOD offices starting next Monday. Students must clear any pending dues.",
+        "type": "common",
+        "status": "draft",
+        "department": [
+            "all"
+        ],
+        "year": [
+            "all"
+        ],
+        "attachment_url": "",
+        "is_popup": false,
+        "start_datetime": "2026-09-28T10:00:00",
+        "end_datetime": null
+    },
+    {
+        "id": "e5f6a7b8-c9d0-1234-5678-90abcdef1234",
+        "title": "Scheduled: CIE-2 Seating Arrangement Notice",
+        "body": "Seating arrangement for CIE-2 examinations will be published here. Check your designated room numbers on the university display boards.",
+        "type": "departmental",
+        "status": "scheduled",
+        "department": [
+            "cse",
+            "eng"
+        ],
+        "year": [
+            "2",
+            "3",
+            "4"
+        ],
+        "attachment_url": "",
+        "is_popup": false,
+        "start_datetime": "2026-10-10T09:00:00",
+        "end_datetime": null
+    }
+]
